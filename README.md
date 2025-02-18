@@ -54,8 +54,6 @@ Detail of **Script**:
  
 **Dashboard** loaded:
 ![alt text](https://github.com/maktup/SCRIPT-FOR-DEPLOY-IBM-DATA-POWER-IN-POSTMAN/blob/main/images/3.jpg?raw=true)
-
-![alt text](https://github.com/maktup/SCRIPT-FOR-DEPLOY-IBM-DATA-POWER-IN-POSTMAN/blob/main/images/3.jpg?raw=true)
 <p> </p>
 <p> </p>
 
