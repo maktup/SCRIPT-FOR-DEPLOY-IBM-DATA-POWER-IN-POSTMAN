@@ -15,20 +15,19 @@ vID_IMAGE=$(podman images | grep 'datapower' | head -n 1 | awk '{print $3}')
 vID_CONTAINER=$(podman ps -a | grep 'datapower' | head -n 1 | awk '{print $1}') 
 vIP_FLOTANTE=150.239.171.251 
 vNETWORK_NAME=ipv4_network 
-#vIMAGE_HOST=cp.icr.io
-#vIMAGE_NAME=cp.icr.io/cp/datapower/datapower-cp4i
-#vIMAGE_VERSION=10.5.0.4
-vIMAGE_HOST=docker.io
-vIMAGE_NAME=docker.io/epulidogil/datapower
-vIMAGE_VERSION=latest
+vIMAGE_HOST=icr.io
+vIMAGE_NAME=icr.io/cpopen/datapower/datapower-limited
+vIMAGE_VERSION=10.6.2.0
 vPORT_HTTP=9090
-vPORT_SSH_01=9022
-vPORT_SSH_02=22
-vPORT_WEB=5554
+vPORT_WEB_01=5550
+vPORT_WEB_02=5554
 vPORT_WS=8000-8010
 vDP_NAME=dgi
 vTIME_SLEEP_01=40
 vTIME_SLEEP_02=4
+vDP_VOLUME_01=./config:/opt/ibm/datapower/drouter/config
+vDP_VOLUME_02=./local:/opt/ibm/datapower/drouter/local
+vDP_VOLUME_03=./certs:/opt/ibm/datapower/root/secure/usrcerts
  
 echo "*. CONFIGURACIÓN DE PARAMETROS:"
 echo "- vENTITLEMENT_KEY: [${vENTITLEMENT_KEY}]"  
@@ -41,13 +40,15 @@ echo "- vIMAGE_HOST: [${vIMAGE_HOST}]"
 echo "- vIMAGE_NAME: [${vIMAGE_NAME}]"   
 echo "- vIMAGE_VERSION: [${vIMAGE_VERSION}]"  
 echo "- vPORT_HTTP: [${vPORT_HTTP}]"  
-echo "- vPORT_SSH_01: [${vPORT_SSH_01}]"  
-echo "- vPORT_SSH_02: [${vPORT_SSH_02}]"   
-echo "- vPORT_WEB: [${vPORT_WEB}]"  
+echo "- vPORT_WEB_01: [${vPORT_WEB_01}]"  
+echo "- vPORT_WEB_02: [${vPORT_WEB_02}]"  
 echo "- vPORT_WS: [${vPORT_WS}]"  
 echo "- vDP_NAME: [${vDP_NAME}]"   
 echo "- vTIME_SLEEP_01: [${vTIME_SLEEP_01}]"
-echo "- vTIME_SLEEP_02: [${vTIME_SLEEP_02}]"     
+echo "- vTIME_SLEEP_02: [${vTIME_SLEEP_02}]"  
+echo "- vDP_VOLUME_01: [${vDP_VOLUME_01}]"
+echo "- vDP_VOLUME_02: [${vDP_VOLUME_02}]"
+echo "- vDP_VOLUME_03: [${vDP_VOLUME_03}]"   
 echo ""
   
 #### CONFIGURACIÓN DE MÉTODOS: ####  
@@ -83,19 +84,17 @@ eliminando_componentes(){
   podman rmi -f ${vID_IMAGE}  
   echo ""
 }	
-	
+
 procesando_adicionales(){ 
   echo "*. ACTIVANDO FIREWALL:"
   echo "- COMANDO: [firewall-cmd --add-port=${vPORT_HTTP}/tcp --permanent --zone=public]"
-  echo "- COMANDO: [firewall-cmd --add-port=${vPORT_SSH_01}/tcp --permanent --zone=public]"
-  echo "- COMANDO: [firewall-cmd --add-port=${vPORT_SSH_02}/tcp --permanent --zone=public]"
-  echo "- COMANDO: [firewall-cmd --add-port=${vPORT_WEB}/tcp --permanent --zone=public]"
+  echo "- COMANDO: [firewall-cmd --add-port=${vPORT_WEB_01}/tcp --permanent --zone=public]"
+  echo "- COMANDO: [firewall-cmd --add-port=${vPORT_WEB_02}/tcp --permanent --zone=public]" 
   echo "- COMANDO: [firewall-cmd --add-port=${vPORT_WS}/tcp --permanent --zone=public]"  
   echo "- COMANDO: [firewall-cmd --reload"  
   firewall-cmd --add-port=${vPORT_HTTP}/tcp --permanent --zone=public
-  firewall-cmd --add-port=${vPORT_SSH_01}/tcp --permanent --zone=public
-  firewall-cmd --add-port=${vPORT_SSH_02}/tcp --permanent --zone=public
-  firewall-cmd --add-port=${vPORT_WEB}/tcp --permanent --zone=public
+  firewall-cmd --add-port=${vPORT_WEB_01}/tcp --permanent --zone=public
+  firewall-cmd --add-port=${vPORT_WEB_02}/tcp --permanent --zone=public 
   firewall-cmd --add-port=${vPORT_WS}/tcp --permanent --zone=public
   firewall-cmd --reload 
   echo ""
@@ -112,8 +111,8 @@ procesando_componentes(){
   echo ""
   
   echo "*. DESPLEGANDO CONTENEDOR:"  
-  echo "- COMANDO: [podman run --name ${vDP_NAME} -e DATAPOWER_ACCEPT_LICENSE=true -e DATAPOWER_INTERACTIVE=true -p ${vPORT_HTTP}:${vPORT_HTTP} -p ${vPORT_SSH_01}:${vPORT_SSH_02} -p ${vPORT_WEB}:${vPORT_WEB} -p ${vPORT_WS}:${vPORT_WS} ${vID_IMAGE} &]" 
-  podman run --name ${vDP_NAME} -e DATAPOWER_ACCEPT_LICENSE=true -e DATAPOWER_INTERACTIVE=true -p ${vPORT_HTTP}:${vPORT_HTTP} -p ${vPORT_SSH_01}:${vPORT_SSH_02} -p ${vPORT_WEB}:${vPORT_WEB} -p ${vPORT_WS}:${vPORT_WS} ${vID_IMAGE} &
+  echo "- COMANDO: [podman run -itd --name ${vDP_NAME} -v ${vDP_VOLUME_01} -v ${vDP_VOLUME_02} -v ${vDP_VOLUME_03} -e DATAPOWER_ACCEPT_LICENSE=true -e DATAPOWER_INTERACTIVE=true -p ${vPORT_HTTP}:${vPORT_HTTP} -p ${vPORT_WEB_01}:${vPORT_WEB_01} -p ${vPORT_WEB_02}:${vPORT_WEB_02} -p ${vPORT_WS}:${vPORT_WS} ${vID_IMAGE} &]" 
+  podman run -itd --name ${vDP_NAME} -v ${vDP_VOLUME_01} -v ${vDP_VOLUME_02} -v ${vDP_VOLUME_03} -e DATAPOWER_ACCEPT_LICENSE=true -e DATAPOWER_INTERACTIVE=true -p ${vPORT_HTTP}:${vPORT_HTTP} -p ${vPORT_WEB_01}:${vPORT_WEB_01} -p ${vPORT_WEB_02}:${vPORT_WEB_02} -p ${vPORT_WS}:${vPORT_WS} ${vID_IMAGE} &
   sleep ${vTIME_SLEEP_02}
   echo "- COMANDO: [podman ps -a]"
   podman ps -a
@@ -131,6 +130,8 @@ procesando_componentes(){
   echo "- COMANDO: [curl -k https://${vIP_FLOTANTE}:${vPORT_HTTP} &]"  
   curl -k https://${vIP_FLOTANTE}:${vPORT_HTTP} &
   echo ""   
+  
+  #### IMPORTANTE: Al finalizar ingresar MANUALMENTE el 'USER:admin / PASSWORD: admin' & luego el COMANDO para activar la consola WEB-UI: 'configure; web-mgmt 0 9090;' & Finalmente ingresar: 'exit / exit' ####
 }
 
 #### PROCESAMIENTO DE DATOS: #### 
